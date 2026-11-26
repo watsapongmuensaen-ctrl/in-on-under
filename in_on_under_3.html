@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>จัดห้องของเล่นบล็อก in on under 3 มิติ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@700&display=swap" rel="stylesheet">
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Mali', sans-serif;
+    font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #FFF4EC;
+    color: #3B2F5C;
+  }
+
+  #gameCanvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    touch-action: none;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* การ์ดโจทย์ด้านบน */
+  #card {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(94vw, 560px);
+    height: clamp(96px, 15vh, 128px);
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.94);
+    border: 2px solid #C9B6F5;
+    border-radius: 18px;
+    padding: 8px 14px;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 6px 18px rgba(91, 63, 160, 0.12);
+    transition: border-color 0.2s ease;
+  }
+
+  #card.correct {
+    border-color: #FFC94D;
+  }
+
+  .card-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    line-height: 1;
+    color: #5B3FA0;
+    gap: 8px;
+  }
+
+  .card-stats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .circle-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1.5px solid #C9B6F5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  #btnHelp {
+    background: #FFFFFF;
+    color: #3B2F5C;
+  }
+
+  #btnCardSpeak {
+    background: #EDE4FF;
+    color: #5B3FA0;
+  }
+
+  .card-row2 {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: clamp(17px, 4.6vw, 28px);
+    line-height: 1.2;
+    color: #3B2F5C;
+    white-space: nowrap;
+  }
+
+  .card-row3 {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: clamp(12px, 3.2vw, 16px);
+    line-height: 1.25;
+    color: #7A6F96;
+    white-space: nowrap;
+  }
+
+  .pill {
+    display: inline-block;
+    background: #EDE4FF;
+    color: #5B3FA0;
+    border-radius: 10px;
+    padding: 1px 9px;
+    white-space: nowrap;
+    border: 2px solid transparent;
+    vertical-align: baseline;
+  }
+
+  .pill.gold,
+  #card.correct .pill {
+    background: #FFF3C4;
+    border-color: #FFC94D;
+    color: #8A5A00;
+  }
+
+  /* ฟองข้อความฟีดแบ็ก */
+  #bubble {
+    position: fixed;
+    top: calc(20px + clamp(96px, 15vh, 128px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(90vw, 520px);
+    z-index: 60;
+    pointer-events: none;
+    display: none;
+    text-align: center;
+  }
+
+  #bubble.show {
+    display: block;
+  }
+
+  #bubble.pop .bubble-box {
+    animation: bubblePop 0.35s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+  }
+
+  @keyframes bubblePop {
+    0% { transform: scale(0.65); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .bubble-box {
+    display: inline-block;
+    max-width: 100%;
+    padding: 10px 18px;
+    box-shadow: 0 8px 20px rgba(59, 47, 92, 0.14);
+  }
+
+  .bubble-box.wrong {
+    display: block;
+    width: 100%;
+    background: #EDE4FF;
+    border: 2px solid #C9B6F5;
+    border-radius: 16px;
+    color: #3B2F5C;
+  }
+
+  .bubble-en {
+    font-size: clamp(14px, 3.8vw, 19px);
+    color: #3B2F5C;
+    line-height: 1.35;
+  }
+
+  .bubble-th {
+    font-size: clamp(12px, 3.2vw, 15px);
+    color: #5B3FA0;
+    line-height: 1.4;
+    margin-top: 3px;
+  }
+
+  .bubble-box.praise {
+    background: #FFF3C4;
+    border: 2px solid #FFC94D;
+    border-radius: 999px;
+    color: #8A5A00;
+    font-size: clamp(15px, 4vw, 20px);
+    padding: 10px 24px;
+  }
+
+  /* แถบควบคุมด้านล่าง */
+  #dash {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(94vw, 620px);
+    height: clamp(64px, 9.5vh, 92px);
+    z-index: 20;
+    display: none;
+    gap: 8px;
+    background: transparent;
+  }
+
+  .dash-item {
+    height: 100%;
+    border-radius: 14px;
+    border: 3px solid #E3DCF5;
+    background: #FFFFFF;
+    color: #3B2F5C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(16px, 4.2vw, 22px);
+    padding: 4px 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(59, 47, 92, 0.08);
+  }
+
+  .dash-speak {
+    flex: 0 0 clamp(56px, 14vw, 80px);
+    background: #EDE4FF;
+    border-color: #C9B6F5;
+    font-size: clamp(22px, 5vw, 30px);
+  }
+
+  .dash-toy {
+    flex: 0 0 calc(1.3 * clamp(56px, 14vw, 80px));
+    background: #FFFDF8;
+    border-color: #C9B6F5;
+    cursor: grab;
+    touch-action: none;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .dash-toy.dragging {
+    opacity: 0.35;
+    cursor: grabbing;
+    transform: scale(0.95);
+  }
+
+  .dash-toy-emoji {
+    font-size: clamp(26px, 6vw, 38px);
+    line-height: 1;
+  }
+
+  .dash-toy-hint {
+    font-size: clamp(9px, 2.4vw, 11px);
+    color: #7A6F96;
+    line-height: 1.1;
+  }
+
+  /* ของเล่นลอยตามนิ้ว/เมาส์ตอนลาก */
+  #dragToy {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 65;
+    pointer-events: none;
+    display: none;
+    font-size: clamp(46px, 11vw, 62px);
+    line-height: 1;
+    transform: translate(-50%, -65%) scale(1.1);
+    filter: drop-shadow(0 8px 14px rgba(59, 47, 92, 0.28));
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+
+  #dragToy.snapped {
+    transform: translate(-50%, -65%) scale(0.86);
+    opacity: 0.72;
+  }
+
+  .dash-drop {
+    flex: 1;
+    background: #5B3FA0;
+    border-color: #3F2A7A;
+    color: #FFFFFF;
+    font-size: clamp(18px, 4.8vw, 26px);
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+  }
+
+  .dash-drop.disabled {
+    background: #B7AED0;
+    border-color: #9A8FBC;
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .dash-word {
+    flex: 1;
+    min-width: 0;
+    background: #FFFFFF;
+    border-color: #E3DCF5;
+    color: #3B2F5C;
+    font-size: clamp(15px, 3.9vw, 22px);
+    padding: 4px 6px;
+  }
+
+  .dash-word-text {
+    display: block;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .dash-word.aimed {
+    border-color: #5B3FA0;
+  }
+
+  /* การ์ดวิธีเล่น */
+  #howto {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: #2b244073;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .howto-card {
+    margin: auto;
+    width: min(92vw, 28rem);
+    background: #FFFFFF;
+    border-radius: 28px;
+    padding: 24px;
+    box-shadow: 0 18px 42px rgba(43, 36, 64, 0.28);
+  }
+
+  .howto-title {
+    font-size: 24px;
+    color: #2b2440;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .howto-goal {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #dd7f00;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .howto-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .howto-step {
+    background: #fff8ed;
+    border-radius: 16px;
+    padding: 11px 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.48;
+    color: #2b2440;
+  }
+
+  .howto-emoji {
+    font-size: 20px;
+    line-height: 1.25;
+    flex-shrink: 0;
+  }
+
+  .howto-tip {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6b6480;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  .howto-btn {
+    width: 100%;
+    height: 56px;
+    background: #ff9f1c;
+    border: none;
+    border-bottom: 4px solid #dd7f00;
+    border-radius: 999px;
+    color: #FFFFFF;
+    font-size: 20px;
+    cursor: pointer;
+    display: block;
+  }
+
+  .howto-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+  }
+
+  /* หน้าต่างสรุปผลตอนจบเกม */
+  #endModal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(246, 238, 252, 0.78);
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .polaroid-card {
+    margin: auto;
+    width: min(92vw, 24rem);
+    max-width: 24rem;
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 18px 18px 24px 18px;
+    border: 3px solid #E3DCF5;
+    box-shadow: 0 18px 40px rgba(91, 63, 160, 0.22);
+    text-align: center;
+  }
+
+  .polaroid-frame {
+    background: #FFF8ED;
+    border: 2px solid #F3D9A4;
+    border-radius: 12px;
+    padding: 14px 12px;
+    margin-bottom: 14px;
+  }
+
+  .polaroid-title {
+    font-size: 21px;
+    color: #3B2F5C;
+    margin-bottom: 6px;
+  }
+
+  .polaroid-stars {
+    font-size: 34px;
+    line-height: 1.2;
+    letter-spacing: 6px;
+    margin: 4px 0 8px 0;
+  }
+
+  .polaroid-summary {
+    font-size: 16px;
+    color: #5B3FA0;
+    margin-bottom: 4px;
+  }
+
+  .polaroid-score {
+    font-size: 20px;
+    color: #8A5A00;
+    background: #FFF3C4;
+    border: 2px solid #FFC94D;
+    border-radius: 999px;
+    display: inline-block;
+    padding: 3px 16px;
+    margin-top: 4px;
+  }
+
+  .polaroid-list {
+    list-style: none;
+    text-align: left;
+    background: #FAF7FF;
+    border: 2px solid #EDE4FF;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #3B2F5C;
+  }
+
+  .polaroid-list li {
+    padding: 2px 0;
+    border-bottom: 1px dashed #E3DCF5;
+  }
+
+  .polaroid-list li:last-child {
+    border-bottom: none;
+  }
+
+  .btn-replay {
+    width: 100%;
+    height: 52px;
+    background: #5B3FA0;
+    border: none;
+    border-bottom: 4px solid #3F2A7A;
+    border-radius: 999px;
+    color: #FFFFFF;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .btn-replay:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="card">
+  <div class="card-row1">
+    <div class="card-stats">
+      <span id="statProgress">🏠 1/8</span>
+      <span id="statScore">⭐ 0</span>
+    </div>
+    <div class="card-actions">
+      <button id="btnHelp" class="circle-btn" type="button" aria-label="วิธีเล่น">❔</button>
+      <button id="btnCardSpeak" class="circle-btn" type="button" aria-label="ฟังซ้ำ">🔊</button>
+    </div>
+  </div>
+  <div id="cardRow2" class="card-row2"></div>
+  <div id="cardRow3" class="card-row3"></div>
+</div>
+
+<div id="bubble">
+  <div id="bubbleBox" class="bubble-box"></div>
+</div>
+
+<div id="dash"></div>
+<div id="dragToy" aria-hidden="true"></div>
+
+<div id="howto">
+  <div class="howto-card">
+    <div class="howto-title">วิธีเล่น</div>
+    <div class="howto-goal">🎯 ฟังคำสั่งภาษาอังกฤษ แล้ววางของเล่นให้ถูกที่ จัดห้องของเล่นบล็อกให้ครบ 8 ชิ้น แล้วถ่ายรูปห้องของเรา! 📸</div>
+    <div class="howto-steps">
+      <div class="howto-step">
+        <span class="howto-emoji">🔊</span>
+        <span>ฟังและอ่านคำสั่ง เช่น Put the duck on the chair. กดปุ่มลำโพงฟังซ้ำได้ไม่จำกัด</span>
+      </div>
+      <div class="howto-step">
+        <span class="howto-emoji">👆</span>
+        <span>แตะจุดเรืองแสงที่จะวาง เงาของเล่นจะไปยืนรอ แล้วกด ⬇️ วาง! (เปลี่ยนจุดได้ก่อนกด) วางผิดไม่เป็นไร ของเล่นเด้งกลับมาให้ลองใหม่</span>
+      </div>
+      <div class="howto-step">
+        <span class="howto-emoji">🙈</span>
+        <span>ท้ายเกมเล่นซ่อนหา! ดูว่าเพื่อนซ่อนอยู่ตรงไหน แล้วแตะบล็อกคำมาเติม It is ___ the box.</span>
+      </div>
+    </div>
+    <div class="howto-tip">💡 ของทุกชิ้นหันหน้ามาหาเรา: ฝั่งที่ใกล้เราคือด้านหน้า ฝั่งไกลคือด้านหลัง · ไม่มีหัวใจ ไม่มีเวลาจำกัด · ได้ดาวแน่นอน!</div>
+    <button id="btnStart" class="howto-btn" type="button">เริ่มเล่น! 🚀</button>
+    <button id="btnResume" class="howto-btn" type="button" style="display: none;">เข้าใจแล้ว! 👍</button>
+  </div>
+</div>
+
+<div id="endModal">
+  <div class="polaroid-card">
+    <div class="polaroid-frame">
+      <div class="polaroid-title">📸 ห้องของเล่นของฉัน</div>
+      <div id="endStars" class="polaroid-stars">⭐⭐⭐</div>
+      <div id="endSummary" class="polaroid-summary">จัดห้องสำเร็จ 0/8 ชิ้น</div>
+      <div id="endScore" class="polaroid-score">⭐ 0</div>
+    </div>
+    <ul id="endList" class="polaroid-list"></ul>
+    <button id="btnReplay" class="btn-replay" type="button">เล่นใหม่อีกครั้ง 🔄</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var FONT = "'Mali', sans-serif";
+
+  /* ==================== ข้อมูลเนื้อหาจริง ==================== */
+  var TOYS = [
+    { key: 'cat',    emoji: '🐱', th: 'แมว' },
+    { key: 'dog',    emoji: '🐶', th: 'หมา' },
+    { key: 'duck',   emoji: '🦆', th: 'เป็ด' },
+    { key: 'frog',   emoji: '🐸', th: 'กบ' },
+    { key: 'rabbit', emoji: '🐰', th: 'กระต่าย' },
+    { key: 'ball',   emoji: '⚽', th: 'ลูกบอล' },
+    { key: 'robot',  emoji: '🤖', th: 'หุ่นยนต์' },
+    { key: 'car',    emoji: '🚗', th: 'รถของเล่น' },
+    { key: 'book',   emoji: '📕', th: 'หนังสือ' }
+  ];
+
+  var TOY_MAP = {};
+  for (var ti = 0; ti < TOYS.length; ti++) {
+    TOY_MAP[TOYS[ti].key] = TOYS[ti];
+  }
+
+  var WORDS = {
+    'in': 'ใน',
+    'on': 'บน',
+    'under': 'ใต้',
+    'next to': 'ข้าง ๆ',
+    'behind': 'ข้างหลัง',
+    'in front of': 'ข้างหน้า'
+  };
+
+  var FURN = {
+    'table': 'โต๊ะ',
+    'chair': 'เก้าอี้',
+    'bed': 'เตียง',
+    'box': 'กล่อง'
+  };
+
+  var PRAISES = ['เก่งมาก!', 'วางถูกที่เลย!'];
+
+  var SPOTS = {
+    bed: {
+      'on':          { x: -4.25, y: 0.875, z: -2 },
+      'under':       { x: -4.5,  y: 0,     z: -1.66 },
+      'shelf':       { x: -4.25, y: 1.875, z: -2.3 }
+    },
+    table: {
+      'on':          { x: -1.5,  y: 0.875, z: 0 },
+      'under':       { x: -1.5,  y: 0,     z: 0.25 },
+      'next to':     { x: -0.25, y: 0,     z: 0 },
+      'behind':      { x: -1.5,  y: 0,     z: -2 },
+      'in front of': { x: -1.5,  y: 0,     z: 1.35 }
+    },
+    chair: {
+      'under':       { x: 1.5,   y: 0,     z: 0.425 },
+      'next to':     { x: 2.375, y: 0,     z: 0.25 },
+      'behind':      { x: 1.5,   y: 0,     z: -2 },
+      'in front of': { x: 1.5,   y: 0,     z: 1.475 }
+    },
+    box: {
+      'in':          { x: 4.5,   y: 0.0625, z: 0.125 },
+      'on':          { x: 4.5,   y: 0.75,   z: 0 },
+      'next to':     { x: 5.5,   y: 0,      z: 0 },
+      'behind':      { x: 4.5,   y: 0,      z: -1.7 },
+      'in front of': { x: 4.5,   y: 0,      z: 1.225 }
+    }
+  };
+
+  var CAM_PRESETS = {
+    bed:   { T: [-4.65, 0.98, -1.92], d: [6.5, 5.6, 7.2] },
+    table: { T: [-1.12, 0.38, 0.08],  d: [6.4, 6.0, 7.8] },
+    chair: { T: [1.85, 0.38, 0.14],   d: [5.4, 6.1, 8.0] },
+    box:   { T: [4.85, 0.38, 0.10],   d: [5.0, 5.4, 7.0] }
+  };
+
+  var ROOM_CAM = {
+    T: [-0.25, 0.4, -0.4],
+    d: [28, 13.0, 19.5]
+  };
+
+  var ROUND_SLOTS = [
+    { type: 'place', variants: [
+      { furn: 'table', toy: 'cat',    answer: 'under',       decoys: ['on', 'in front of'] },
+      { furn: 'table', toy: 'ball',   answer: 'under',       decoys: ['on', 'in front of'] }
+    ]},
+    { type: 'place', variants: [
+      { furn: 'box',   toy: 'duck',   answer: 'in',          decoys: ['on', 'in front of'] },
+      { furn: 'box',   toy: 'frog',   answer: 'in',          decoys: ['on', 'in front of'] }
+    ]},
+    { type: 'place', variants: [
+      { furn: 'bed',   toy: 'book',   answer: 'on',          decoys: ['under', 'shelf'] },
+      { furn: 'bed',   toy: 'rabbit', answer: 'on',          decoys: ['under', 'shelf'] }
+    ]},
+    { type: 'place', variants: [
+      { furn: 'chair', toy: 'dog',    answer: 'behind',      decoys: ['in front of', 'next to', 'under'] },
+      { furn: 'chair', toy: 'robot',  answer: 'behind',      decoys: ['in front of', 'next to', 'under'] }
+    ]},
+    { type: 'place', variants: [
+      { furn: 'table', toy: 'robot',  answer: 'in front of', decoys: ['behind', 'next to', 'on'] },
+      { furn: 'table', toy: 'car',    answer: 'in front of', decoys: ['behind', 'next to', 'on'] }
+    ]},
+    { type: 'place', variants: [
+      { furn: 'box',   toy: 'ball',   answer: 'next to',     decoys: ['behind', 'in front of'] },
+      { furn: 'box',   toy: 'cat',    answer: 'next to',     decoys: ['behind', 'in front of'] }
+    ]},
+    { type: 'hide', variants: [
+      { furn: 'bed',   toy: 'duck',   answer: 'under',       decoys: ['on', 'next to'] },
+      { furn: 'table', toy: 'robot',  answer: 'on',          decoys: ['under', 'next to'] }
+    ]},
+    { type: 'hide', variants: [
+      { furn: 'box',   toy: 'dog',    answer: 'in front of', decoys: ['in', 'on'] },
+      { furn: 'box',   toy: 'cat',    answer: 'on',          decoys: ['in', 'in front of'] }
+    ]}
+  ];
+
+  /* ==================== อ้างอิง DOM ==================== */
+  var canvas = document.getElementById('gameCanvas');
+  var elCard = document.getElementById('card');
+  var elStatProgress = document.getElementById('statProgress');
+  var elStatScore = document.getElementById('statScore');
+  var elCardRow2 = document.getElementById('cardRow2');
+  var elCardRow3 = document.getElementById('cardRow3');
+  var elBtnHelp = document.getElementById('btnHelp');
+  var elBtnCardSpeak = document.getElementById('btnCardSpeak');
+  var elBubble = document.getElementById('bubble');
+  var elBubbleBox = document.getElementById('bubbleBox');
+  var elDash = document.getElementById('dash');
+  var elDragToy = document.getElementById('dragToy');
+  var elHowto = document.getElementById('howto');
+  var elBtnStart = document.getElementById('btnStart');
+  var elBtnResume = document.getElementById('btnResume');
+  var elEndModal = document.getElementById('endModal');
+  var elEndStars = document.getElementById('endStars');
+  var elEndSummary = document.getElementById('endSummary');
+  var elEndScore = document.getElementById('endScore');
+  var elEndList = document.getElementById('endList');
+  var elBtnReplay = document.getElementById('btnReplay');
+
+  /* ==================== ตัวแปรสถานะเกม ==================== */
+  var gameState = 'HOWTO';
+  var pausedFrom = 'HOWTO';
+  var phaseT = 0;
+  var score = 0;
+  var streak = 0;
+  var qIndex = 0;
+  var correctTotal = 0;
+  var firstTryCorrect = 0;
+  var missCount = 0;
+  var aimTime = 0;
+  var tapOkAt = 0;
+  var animTime = 0;
+  var lastT = 0;
+
+  var wrongs = [];
+  var rounds = [];
+  var placed = [];
+  var usedToys = [];
+
+  var isProcessingAnswer = false;
+  var aimIndex = -1;
+  var hasInteracted = false;
+  var bubbleVisible = false;
+  var endModalShown = false;
+
+  var isDragging = false;
+  var dragSource = '';
+  var dragPointerId = -1;
+  var dragStartX = 0;
+  var dragStartY = 0;
+  var dragMoved = false;
+  var dragToyBoxEl = null;
+
+  var fallMode = 'drop';
+  var fallDur = 0.28;
+  var fallJudged = false;
+  var fallSpot = null;
+  var currentToyBasePos = { x: 0, y: 0, z: 0 };
+  var currentSpeechText = '';
+
+  /* ==================== ระบบเสียงและเสียงพูด ==================== */
+  var audioCtx = null;
+
+  function initAudio() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) {
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function playLandSfx() {
+    try {
+      if (!audioCtx) return;
+      var now = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(300, now);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.055);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function playRightSfx() {
+    try {
+      if (!audioCtx) return;
+      var freqs = [523, 659, 784, 1047];
+      var base = audioCtx.currentTime;
+      for (var i = 0; i < freqs.length; i++) {
+        var t = base + i * 0.075;
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freqs[i], t);
+        gain.gain.setValueAtTime(0.14, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.19);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function playWrongSfx() {
+    try {
+      if (!audioCtx) return;
+      var now = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.linearRampToValueAtTime(130, now + 0.22);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.23);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  var SPEECH_RATE = 0.45;
+
+  // แทรกจังหวะหยุดสั้น ๆ รอบคำบุพบทเพื่อให้เด็กฟังคำสำคัญได้ชัดขึ้น
+  function formatSlowSpeech(text) {
+    return String(text).replace(
+      / (in front of|next to|behind|under|on|in) the /g,
+      ', $1, the '
+    );
+  }
+
+  function speak(text, followUpText) {
+    if (!hasInteracted || !text) return;
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(formatSlowSpeech(text));
+      u.lang = 'en-US';
+      u.rate = SPEECH_RATE;
+      window.speechSynthesis.speak(u);
+      if (followUpText) {
+        var u2 = new SpeechSynthesisUtterance(formatSlowSpeech(followUpText));
+        u2.lang = 'en-US';
+        u2.rate = SPEECH_RATE;
+        window.speechSynthesis.speak(u2);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function cancelSpeech() {
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  /* ==================== ตั้งค่าฉาก Three.js ==================== */
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color('#FFF4EC');
+  scene.fog = new THREE.Fog('#FFF4EC', 45, 100);
+
+  var camera = new THREE.PerspectiveCamera(
+    window.innerHeight >= window.innerWidth ? 50 : 42,
+    window.innerWidth / Math.max(1, window.innerHeight),
+    0.1,
+    200
+  );
+
+  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xfff1e0, 0.7);
+  scene.add(hemiLight);
+
+  var dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+  dirLight.position.set(7, 22, 12);
+  scene.add(dirLight);
+
+  var camPos = new THREE.Vector3();
+  var camLook = new THREE.Vector3();
+  var goalPos = new THREE.Vector3();
+  var goalLook = new THREE.Vector3();
+  var currentCamMode = 'room';
+  var currentCamFurn = 'table';
+
+  function getDistIndex() {
+    if (window.innerHeight >= window.innerWidth) return 0;
+    if (window.innerHeight < 500) return 2;
+    return 1;
+  }
+
+  function setCameraGoal(mode, furn, immediate) {
+    currentCamMode = mode;
+    if (furn) currentCamFurn = furn;
+    var di = getDistIndex();
+    if (mode === 'room') {
+      var rT = ROOM_CAM.T;
+      var rd = ROOM_CAM.d[di];
+      goalLook.set(rT[0], rT[1], rT[2]);
+      goalPos.set(rT[0], rT[1] + 0.643 * rd, rT[2] + 0.766 * rd);
+    } else {
+      var p = CAM_PRESETS[currentCamFurn] || CAM_PRESETS.table;
+      var fT = p.T;
+      var fd = p.d[di];
+      goalLook.set(fT[0], fT[1], fT[2]);
+      goalPos.set(fT[0], fT[1] + 0.766 * fd, fT[2] + 0.643 * fd);
+    }
+    if (immediate) {
+      camPos.copy(goalPos);
+      camLook.copy(goalLook);
+      camera.position.copy(camPos);
+      camera.lookAt(camLook);
+    }
+  }
+
+  setCameraGoal('room', 'table', true);
+
+  /* ==================== สร้างห้องและเฟอร์นิเจอร์ 3 มิติ ==================== */
+  function makeBox(w, h, d, color, x, y, z) {
+    var geom = new THREE.BoxGeometry(w, h, d);
+    var mat = new THREE.MeshLambertMaterial({ color: color });
+    var mesh = new THREE.Mesh(geom, mat);
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    return mesh;
+  }
+
+  function makeFloorTexture() {
+    var c = document.createElement('canvas');
+    c.width = 64;
+    c.height = 64;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#F1EDF9';
+    ctx.fillRect(0, 0, 64, 64);
+    ctx.fillStyle = '#E3DCF2';
+    ctx.fillRect(0, 0, 32, 32);
+    ctx.fillRect(32, 32, 32, 32);
+    var tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.magFilter = THREE.NearestFilter;
+    tex.repeat.set(13.5, 4.75);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  function buildStaticRoom() {
+    // พื้นห้องตารางช่องละ 0.5
+    var floorGeom = new THREE.BoxGeometry(13.5, 0.1, 4.75);
+    var floorMat = new THREE.MeshLambertMaterial({ map: makeFloorTexture() });
+    var floorMesh = new THREE.Mesh(floorGeom, floorMat);
+    floorMesh.position.set(-0.25, -0.05, -0.125);
+    scene.add(floorMesh);
+
+    // ผนังหลัง + หน้าต่าง
+    makeBox(13.5, 2.75, 0.2, '#CDE7F0', -0.25, 1.375, -2.6);
+    makeBox(1.5, 0.8, 0.04, '#A8DAF5', 0, 1.75, -2.47);
+
+    // เตียง (bed)
+    var bedLegsX = [-5.375, -3.625];
+    var bedLegsZ = [-2.375, -1.625];
+    for (var ix = 0; ix < 2; ix++) {
+      for (var iz = 0; iz < 2; iz++) {
+        makeBox(0.25, 0.5, 0.25, '#F4A988', bedLegsX[ix], 0.25, bedLegsZ[iz]);
+      }
+    }
+    makeBox(2, 0.25, 1, '#FFD6E0', -4.5, 0.625, -2);
+    makeBox(1.9, 0.125, 0.9, '#FFFFFF', -4.5, 0.81, -2);
+    makeBox(0.25, 1.25, 1, '#FF9AA2', -5.625, 0.625, -2);
+    makeBox(1, 0.125, 0.375, '#F3C6A5', -4.25, 1.81, -2.31);
+
+    // โต๊ะ (table)
+    makeBox(1.5, 0.125, 1, '#FFB7CE', -1.5, 0.81, 0);
+    var tableLegsX = [-2.19, -0.81];
+    var tableLegsZ = [-0.44, 0.44];
+    for (var tx = 0; tx < 2; tx++) {
+      for (var tz = 0; tz < 2; tz++) {
+        makeBox(0.125, 0.75, 0.125, '#F497B4', tableLegsX[tx], 0.375, tableLegsZ[tz]);
+      }
+    }
+
+    // เก้าอี้ (chair)
+    makeBox(0.75, 0.125, 0.75, '#B5EAD7', 1.5, 0.69, 0.25);
+    var chairLegsX = [1.19, 1.81];
+    var chairLegsZ = [-0.06, 0.56];
+    for (var cx = 0; cx < 2; cx++) {
+      for (var cz = 0; cz < 2; cz++) {
+        makeBox(0.125, 0.625, 0.125, '#8FD3B8', chairLegsX[cx], 0.31, chairLegsZ[cz]);
+      }
+    }
+    makeBox(0.75, 0.5, 0.125, '#B5EAD7', 1.5, 1, -0.06);
+
+    // กล่อง (box) นอนตะแคง ปากเปิดหันหากล้อง
+    makeBox(1, 0.0625, 0.75, '#F7D08A', 4.5, 0.031, 0);
+    makeBox(1, 0.0625, 0.75, '#F7D08A', 4.5, 0.719, 0);
+    makeBox(0.0625, 0.625, 0.75, '#F7D08A', 4.031, 0.375, 0);
+    makeBox(0.0625, 0.625, 0.75, '#F7D08A', 4.969, 0.375, 0);
+    makeBox(0.875, 0.625, 0.0625, '#F7D08A', 4.5, 0.375, -0.344);
+  }
+
+  buildStaticRoom();
+
+  /* ==================== วัตถุ 3 มิติแบบไดนามิกและแคชเท็กซ์เจอร์ ==================== */
+  var emojiTexCache = {};
+  var badgeTexCache = {};
+  var starTex = null;
+
+  var ringGeomShared = new THREE.RingGeometry(0.17, 0.25, 4);
+  ringGeomShared.rotateX(-Math.PI / 2);
+  ringGeomShared.rotateY(Math.PI / 4);
+
+  var toyBaseGeomShared = new THREE.BoxGeometry(0.3, 0.05, 0.3);
+
+  var activeSpots = [];
+  var rings = [];
+  var badges = [];
+  var placedToys = [];
+  var particles = [];
+  var currentToy = null;
+  var ghostToy = null;
+
+  function getEmojiTexture(toyKey) {
+    if (emojiTexCache[toyKey]) return emojiTexCache[toyKey];
+    var info = TOY_MAP[toyKey] || TOYS[0];
+    var c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, 128, 128);
+    ctx.font = '100px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(info.emoji, 64, 70);
+    var tex = new THREE.CanvasTexture(c);
+    tex.needsUpdate = true;
+    emojiTexCache[toyKey] = tex;
+    return tex;
+  }
+
+  function getBadgeTexture(num, isAimed) {
+    var key = String(num) + (isAimed ? '_aim' : '');
+    if (badgeTexCache[key]) return badgeTexCache[key];
+    var c = document.createElement('canvas');
+    c.width = 64;
+    c.height = 64;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.beginPath();
+    ctx.arc(32, 32, 27, 0, Math.PI * 2);
+    ctx.fillStyle = isAimed ? '#EDE4FF' : '#FFFFFF';
+    ctx.fill();
+    ctx.lineWidth = isAimed ? 5 : 4;
+    ctx.strokeStyle = isAimed ? '#5B3FA0' : '#C9B6F5';
+    ctx.stroke();
+    ctx.fillStyle = isAimed ? '#5B3FA0' : '#3B2F5C';
+    ctx.font = '700 34px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(num), 32, 34);
+    var tex = new THREE.CanvasTexture(c);
+    tex.needsUpdate = true;
+    badgeTexCache[key] = tex;
+    return tex;
+  }
+
+  function updateBadgeHighlights() {
+    for (var i = 0; i < badges.length; i++) {
+      var isAimed = (i === aimIndex && gameState === 'AIM');
+      var tex = getBadgeTexture(i + 1, isAimed);
+      if (badges[i].material.map !== tex) {
+        badges[i].material.map = tex;
+        badges[i].material.needsUpdate = true;
+      }
+      var sc = isAimed ? 0.34 : 0.30;
+      badges[i].scale.set(sc, sc, 1);
+    }
+  }
+
+  function getStarTexture() {
+    if (starTex) return starTex;
+    var c = document.createElement('canvas');
+    c.width = 64;
+    c.height = 64;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.beginPath();
+    var spikes = 5;
+    var outerR = 26;
+    var innerR = 12;
+    for (var i = 0; i < spikes * 2; i++) {
+      var r = (i % 2 === 0) ? outerR : innerR;
+      var a = (i * Math.PI) / spikes - Math.PI / 2;
+      var px = 32 + Math.cos(a) * r;
+      var py = 32 + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#FFC94D';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#FFF3C4';
+    ctx.stroke();
+    starTex = new THREE.CanvasTexture(c);
+    starTex.needsUpdate = true;
+    return starTex;
+  }
+
+  function createToyGroup(toyKey, isGhost) {
+    var group = new THREE.Group();
+    var baseMat = new THREE.MeshLambertMaterial({
+      color: '#F7D08A',
+      transparent: !!isGhost,
+      opacity: isGhost ? 0.45 : 1.0
+    });
+    var base = new THREE.Mesh(toyBaseGeomShared, baseMat);
+    base.position.set(0, 0.025, 0);
+    group.add(base);
+
+    var spriteMat = new THREE.SpriteMaterial({
+      map: getEmojiTexture(toyKey),
+      transparent: true,
+      opacity: isGhost ? 0.45 : 1.0,
+      depthTest: true
+    });
+    var sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(0.4, 0.4, 1);
+    sprite.position.set(0, 0.26, 0);
+    group.add(sprite);
+
+    return group;
+  }
+
+  function disposeToyGroup(grp) {
+    if (!grp) return;
+    grp.traverse(function (obj) {
+      if (obj.material) {
+        obj.material.dispose();
+      }
+    });
+  }
+
+  function clearRoundHelpers() {
+    for (var i = 0; i < rings.length; i++) {
+      scene.remove(rings[i]);
+      if (rings[i].material) rings[i].material.dispose();
+    }
+    rings = [];
+
+    for (var j = 0; j < badges.length; j++) {
+      scene.remove(badges[j]);
+      if (badges[j].material) badges[j].material.dispose();
+    }
+    badges = [];
+
+    if (ghostToy) {
+      scene.remove(ghostToy);
+      disposeToyGroup(ghostToy);
+      ghostToy = null;
+    }
+    activeSpots = [];
+  }
+
+  function clearAllPlacedToys() {
+    for (var i = 0; i < placedToys.length; i++) {
+      scene.remove(placedToys[i]);
+      disposeToyGroup(placedToys[i]);
+    }
+    placedToys = [];
+    if (currentToy) {
+      scene.remove(currentToy);
+      disposeToyGroup(currentToy);
+      currentToy = null;
+    }
+  }
+
+  function clearParticles() {
+    for (var i = 0; i < particles.length; i++) {
+      scene.remove(particles[i].mesh);
+      if (particles[i].mesh.material) particles[i].mesh.material.dispose();
+    }
+    particles = [];
+  }
+
+  function spawnStars(pos) {
+    var tex = getStarTexture();
+    for (var i = 0; i < 24; i++) {
+      var mat = new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 1,
+        depthTest: false
+      });
+      var sp = new THREE.Sprite(mat);
+      sp.renderOrder = 15;
+      var s = 0.14 + Math.random() * 0.14;
+      sp.scale.set(s, s, 1);
+      sp.position.set(pos.x, pos.y + 0.3, pos.z);
+      scene.add(sp);
+      var angle = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.35;
+      var speed = 1.1 + Math.random() * 1.4;
+      particles.push({
+        mesh: sp,
+        vx: Math.cos(angle) * speed,
+        vy: 1.8 + Math.random() * 1.8,
+        vz: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 1.0 + Math.random() * 0.45,
+        baseScale: s
+      });
+    }
+  }
+
+  function updateParticles(dt) {
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.life += dt;
+      if (p.life >= p.maxLife) {
+        scene.remove(p.mesh);
+        if (p.mesh.material) p.mesh.material.dispose();
+        particles.splice(i, 1);
+        continue;
+      }
+      p.vy -= 4.2 * dt;
+      p.mesh.position.x += p.vx * dt;
+      p.mesh.position.y += p.vy * dt;
+      p.mesh.position.z += p.vz * dt;
+      var k = 1 - p.life / p.maxLife;
+      p.mesh.material.opacity = k;
+      var sc = p.baseScale * (0.5 + 0.5 * k);
+      p.mesh.scale.set(sc, sc, 1);
+    }
+  }
+
+  /* ==================== ตัวช่วยจัดการ UI ==================== */
+  function pillHTML(word, isGold) {
+    return '<span class="pill' + (isGold ? ' gold' : '') + '">' + word + '</span>';
+  }
+
+  function fit(el) {
+    if (!el) return;
+    el.style.fontSize = '';
+    var computed = parseFloat(window.getComputedStyle(el).fontSize);
+    var size = isNaN(computed) ? 16 : computed;
+    while (el.scrollWidth > el.clientWidth && size > 12) {
+      size = Math.max(12, size - 0.5);
+      el.style.fontSize = size + 'px';
+    }
+  }
+
+  function fitAllTexts() {
+    fit(elCardRow2);
+    fit(elCardRow3);
+    var wordTexts = elDash.querySelectorAll('.dash-word-text');
+    for (var i = 0; i < wordTexts.length; i++) {
+      fit(wordTexts[i]);
+    }
+  }
+
+  function showBubbleWrong(enHtml, thText) {
+    elBubbleBox.className = 'bubble-box wrong';
+    elBubbleBox.innerHTML =
+      '<div class="bubble-en">' + enHtml + '</div>' +
+      '<div class="bubble-th">' + thText + '</div>';
+    elBubble.classList.remove('pop');
+    elBubble.classList.add('show');
+    void elBubble.offsetWidth;
+    elBubble.classList.add('pop');
+    bubbleVisible = true;
+  }
+
+  function showBubblePraise(text) {
+    elBubbleBox.className = 'bubble-box praise';
+    elBubbleBox.textContent = text;
+    elBubble.classList.remove('pop');
+    elBubble.classList.add('show');
+    void elBubble.offsetWidth;
+    elBubble.classList.add('pop');
+    bubbleVisible = true;
+  }
+
+  function hideBubble() {
+    elBubble.classList.remove('show');
+    elBubble.classList.remove('pop');
+    bubbleVisible = false;
+  }
+
+  /* ==================== สร้างชุดโจทย์ 8 ข้อ ==================== */
+  function shuffleArr(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+    return a;
+  }
+
+  function pickUniqueToy(preferred) {
+    var chosen = preferred;
+    if (usedToys.indexOf(chosen) !== -1) {
+      for (var i = 0; i < TOYS.length; i++) {
+        if (usedToys.indexOf(TOYS[i].key) === -1) {
+          chosen = TOYS[i].key;
+          break;
+        }
+      }
+    }
+    usedToys.push(chosen);
+    return chosen;
+  }
+
+  function generateRounds() {
+    usedToys = [];
+    var out = [];
+    for (var i = 0; i < ROUND_SLOTS.length; i++) {
+      var slot = ROUND_SLOTS[i];
+      var v = slot.variants[Math.floor(Math.random() * slot.variants.length)];
+      var toy = pickUniqueToy(v.toy);
+      var item = {
+        type: slot.type,
+        furn: v.furn,
+        toy: toy,
+        answer: v.answer,
+        decoys: v.decoys.slice()
+      };
+      if (slot.type === 'hide') {
+        item.choices = shuffleArr([v.answer].concat(v.decoys));
+      }
+      out.push(item);
+    }
+    return out;
+  }
+
+  function getCurrentRound() {
+    if (rounds.length === 0) return null;
+    var idx = Math.max(0, Math.min(7, qIndex));
+    return rounds[idx];
+  }
+
+  function getPromptSpeech(r) {
+    if (!r) return '';
+    if (r.type === 'place') {
+      return 'Put the ' + r.toy + ' ' + r.answer + ' the ' + r.furn + '.';
+    }
+    return 'Where is the ' + r.toy + '?';
+  }
+
+  /* ==================== อัปเดตการ์ดและแถบควบคุม ==================== */
+  function updateCardHeader() {
+    elStatProgress.textContent = '🏠 ' + Math.min(qIndex + 1, 8) + '/8';
+    elStatScore.textContent = '⭐ ' + score;
+  }
+
+  function updateCardPrompt(r, fillWord) {
+    elCard.classList.remove('correct');
+    updateCardHeader();
+    if (r.type === 'place') {
+      elCardRow2.innerHTML = 'Put the ' + r.toy + ' ' + pillHTML(r.answer, false) + ' the ' + r.furn + '.';
+      elCardRow3.textContent = 'ฟังแล้ววางของเล่นให้ถูกที่';
+    } else {
+      var shownWord = fillWord ? fillWord : '___';
+      elCardRow2.textContent = 'Where is the ' + r.toy + '?';
+      elCardRow3.innerHTML = 'It is ' + pillHTML(shownWord, false) + ' the ' + r.furn + '.';
+    }
+    fitAllTexts();
+  }
+
+  function updateCardRight(r) {
+    elCard.classList.add('correct');
+    updateCardHeader();
+    var toyInfo = TOY_MAP[r.toy];
+    if (r.type === 'place') {
+      elCardRow2.innerHTML = 'The ' + r.toy + ' is ' + pillHTML(r.answer, true) + ' the ' + r.furn + '.';
+    } else {
+      elCardRow2.innerHTML = 'It is ' + pillHTML(r.answer, true) + ' the ' + r.furn + '.';
+    }
+    elCardRow3.textContent = toyInfo.th + 'อยู่' + WORDS[r.answer] + FURN[r.furn];
+    fitAllTexts();
+  }
+
+  function buildDashForRound(r) {
+    elDash.innerHTML = '';
+
+    var speakBtn = document.createElement('button');
+    speakBtn.type = 'button';
+    speakBtn.className = 'dash-item dash-speak';
+    speakBtn.textContent = '🔊';
+    speakBtn.setAttribute('aria-label', 'ฟังซ้ำ');
+    speakBtn.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+      hasInteracted = true;
+      speak(currentSpeechText);
+    });
+    elDash.appendChild(speakBtn);
+
+    if (r.type === 'place') {
+      var toyBox = document.createElement('div');
+      toyBox.className = 'dash-item dash-toy';
+      var emojiSpan = document.createElement('span');
+      emojiSpan.className = 'dash-toy-emoji';
+      emojiSpan.textContent = TOY_MAP[r.toy].emoji;
+      var hintSpan = document.createElement('span');
+      hintSpan.className = 'dash-toy-hint';
+      hintSpan.textContent = 'ลากวาง';
+      toyBox.appendChild(emojiSpan);
+      toyBox.appendChild(hintSpan);
+      toyBox.addEventListener('pointerdown', function (e) {
+        e.stopPropagation();
+        hasInteracted = true;
+        if (performance.now() < tapOkAt) return;
+        if (gameState !== 'AIM' || isProcessingAnswer) return;
+        isDragging = true;
+        dragSource = 'dash';
+        dragPointerId = e.pointerId;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        dragMoved = true;
+        dragToyBoxEl = toyBox;
+        toyBox.classList.add('dragging');
+        elDragToy.textContent = TOY_MAP[r.toy].emoji;
+        elDragToy.style.left = e.clientX + 'px';
+        elDragToy.style.top = e.clientY + 'px';
+        elDragToy.classList.remove('snapped');
+        elDragToy.style.display = 'block';
+        updateDragHover(e.clientX, e.clientY);
+      });
+      elDash.appendChild(toyBox);
+
+      var dropBtn = document.createElement('button');
+      dropBtn.type = 'button';
+      dropBtn.id = 'btnDrop';
+      dropBtn.className = 'dash-item dash-drop disabled';
+      dropBtn.textContent = '⬇️ วาง!';
+      dropBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation();
+        hasInteracted = true;
+        if (performance.now() < tapOkAt) return;
+        doDrop();
+      });
+      elDash.appendChild(dropBtn);
+    } else {
+      for (var i = 0; i < r.choices.length; i++) {
+        (function (btnIdx, word) {
+          var wBtn = document.createElement('button');
+          wBtn.type = 'button';
+          wBtn.className = 'dash-item dash-word';
+          wBtn.dataset.idx = String(btnIdx);
+          var span = document.createElement('span');
+          span.className = 'dash-word-text';
+          span.textContent = word;
+          wBtn.appendChild(span);
+          wBtn.addEventListener('pointerdown', function (e) {
+            e.stopPropagation();
+            hasInteracted = true;
+            if (performance.now() < tapOkAt) return;
+            chooseHideWord(btnIdx);
+          });
+          elDash.appendChild(wBtn);
+        })(i, r.choices[i]);
+      }
+      fitAllTexts();
+    }
+  }
+
+  function updateDropButtonUI() {
+    var dropBtn = document.getElementById('btnDrop');
+    if (!dropBtn) return;
+    if (gameState === 'AIM' && aimIndex >= 0 && !isProcessingAnswer) {
+      dropBtn.classList.remove('disabled');
+    } else {
+      dropBtn.classList.add('disabled');
+    }
+  }
+
+  function updateHideWordButtonsUI() {
+    var btns = elDash.querySelectorAll('.dash-word');
+    for (var i = 0; i < btns.length; i++) {
+      if (i === aimIndex) {
+        btns[i].classList.add('aimed');
+      } else {
+        btns[i].classList.remove('aimed');
+      }
+    }
+  }
+
+  /* ==================== การไหลของแต่ละรอบ ==================== */
+  function createPlaceSpotsAndGhost(r) {
+    clearRoundHelpers();
+    var names = [r.answer].concat(r.decoys);
+    var furnSpots = SPOTS[r.furn];
+    var list = [];
+    for (var i = 0; i < names.length; i++) {
+      var nm = names[i];
+      if (furnSpots[nm]) {
+        list.push({ name: nm, pos: furnSpots[nm] });
+      }
+    }
+    list.sort(function (a, b) {
+      return (a.pos.x + 0.01 * a.pos.z) - (b.pos.x + 0.01 * b.pos.z);
+    });
+    activeSpots = list;
+
+    for (var k = 0; k < activeSpots.length; k++) {
+      var sp = activeSpots[k].pos;
+
+      var rMat = new THREE.MeshBasicMaterial({
+        color: '#6FD6C0',
+        side: THREE.DoubleSide
+      });
+      var ring = new THREE.Mesh(ringGeomShared, rMat);
+      ring.position.set(sp.x, sp.y + 0.03, sp.z);
+      scene.add(ring);
+      rings.push(ring);
+
+      var bMat = new THREE.SpriteMaterial({
+        map: getBadgeTexture(k + 1, false),
+        transparent: true,
+        depthTest: false
+      });
+      var badge = new THREE.Sprite(bMat);
+      badge.renderOrder = 10;
+      badge.scale.set(0.30, 0.30, 1);
+      badge.position.set(sp.x, sp.y + 0.08, sp.z + 0.3);
+      scene.add(badge);
+      badges.push(badge);
+    }
+
+    ghostToy = createToyGroup(r.toy, true);
+    ghostToy.visible = false;
+    scene.add(ghostToy);
+  }
+
+  function enterAimFresh() {
+    cancelDragUI();
+    gameState = 'AIM';
+    phaseT = 0;
+    aimIndex = -1;
+    isProcessingAnswer = false;
+    if (ghostToy) ghostToy.visible = false;
+    updateDropButtonUI();
+    updateHideWordButtonsUI();
+    updateBadgeHighlights();
+  }
+
+  function resumeAimAfterWrong() {
+    cancelDragUI();
+    gameState = 'AIM';
+    phaseT = 0;
+    isProcessingAnswer = false;
+    var r = getCurrentRound();
+    if (r && r.type === 'place') {
+      if (ghostToy && aimIndex >= 0) {
+        ghostToy.visible = true;
+      }
+      updateDropButtonUI();
+      updateBadgeHighlights();
+    } else {
+      aimIndex = -1;
+      updateHideWordButtonsUI();
+    }
+  }
+
+  function buildRound() {
+    var r = getCurrentRound();
+    if (!r) return;
+
+    cancelDragUI();
+    gameState = 'INTRO';
+    phaseT = 0;
+    aimIndex = -1;
+    isProcessingAnswer = false;
+    fallJudged = false;
+    fallSpot = null;
+
+    clearRoundHelpers();
+    if (currentToy) {
+      scene.remove(currentToy);
+      disposeToyGroup(currentToy);
+      currentToy = null;
+    }
+
+    setCameraGoal('furn', r.furn, false);
+    hideBubble();
+
+    currentSpeechText = getPromptSpeech(r);
+    updateCardPrompt(r);
+    buildDashForRound(r);
+
+    if (r.type === 'hide') {
+      var ansSpot = SPOTS[r.furn][r.answer];
+      currentToy = createToyGroup(r.toy, false);
+      currentToy.position.set(ansSpot.x, 0, ansSpot.z + 0.9);
+      currentToyBasePos = { x: ansSpot.x, y: ansSpot.y, z: ansSpot.z };
+      scene.add(currentToy);
+    }
+
+    speak(currentSpeechText);
+  }
+
+  function aimAtRing(idx, nowMs, allowDoubleTapDrop) {
+    var r = getCurrentRound();
+    if (!r || r.type !== 'place' || gameState !== 'AIM' || isProcessingAnswer) return;
+    if (idx < 0 || idx >= activeSpots.length) return;
+
+    if (allowDoubleTapDrop && aimIndex === idx && (nowMs - aimTime) >= 400) {
+      doDrop();
+      return;
+    }
+
+    aimIndex = idx;
+    aimTime = nowMs;
+    var p = activeSpots[idx].pos;
+    if (ghostToy) {
+      ghostToy.position.set(p.x, p.y, p.z);
+      ghostToy.visible = true;
+    }
+    updateDropButtonUI();
+    updateBadgeHighlights();
+  }
+
+  function doDrop() {
+    var r = getCurrentRound();
+    if (!r || r.type !== 'place') return;
+    if (gameState !== 'AIM' || aimIndex < 0 || isProcessingAnswer) return;
+
+    cancelDragUI();
+    isProcessingAnswer = true;
+    updateDropButtonUI();
+    updateBadgeHighlights();
+
+    if (ghostToy) ghostToy.visible = false;
+
+    fallSpot = activeSpots[aimIndex];
+    fallMode = (fallSpot.name === 'under' || fallSpot.name === 'in') ? 'slide' : 'drop';
+    fallDur = (fallMode === 'slide') ? 0.3 : 0.28;
+    fallJudged = false;
+
+    currentToy = createToyGroup(r.toy, false);
+    if (fallMode === 'slide') {
+      currentToy.position.set(fallSpot.pos.x, 0, fallSpot.pos.z + 0.9);
+    } else {
+      currentToy.position.set(fallSpot.pos.x, fallSpot.pos.y + 1.0, fallSpot.pos.z);
+    }
+    currentToyBasePos = { x: fallSpot.pos.x, y: fallSpot.pos.y, z: fallSpot.pos.z };
+    scene.add(currentToy);
+
+    gameState = 'FALL';
+    phaseT = 0;
+  }
+
+  function chooseHideWord(btnIdx) {
+    var r = getCurrentRound();
+    if (!r || r.type !== 'hide') return;
+    if (gameState !== 'AIM' || isProcessingAnswer) return;
+    if (btnIdx < 0 || btnIdx >= r.choices.length) return;
+
+    isProcessingAnswer = true;
+    aimIndex = btnIdx;
+    updateHideWordButtonsUI();
+
+    var picked = r.choices[btnIdx];
+    updateCardPrompt(r, picked);
+    judge(picked);
+  }
+
+  function judge(picked) {
+    var r = getCurrentRound();
+    if (!r) return;
+
+    var toyInfo = TOY_MAP[r.toy];
+
+    if (picked === r.answer) {
+      streak += 1;
+      score += 100 + Math.max(0, streak - 1) * 25;
+      correctTotal += 1;
+      if (missCount === 0) {
+        firstTryCorrect += 1;
+      }
+
+      if (r.type === 'place' && aimIndex >= 0 && rings[aimIndex]) {
+        rings[aimIndex].material.color.set('#FFC94D');
+      }
+
+      updateCardRight(r);
+
+      var rightSentenceFull = 'The ' + r.toy + ' is ' + r.answer + ' the ' + r.furn + '.';
+      var rightSpeech = (r.type === 'place')
+        ? rightSentenceFull
+        : ('It is ' + r.answer + ' the ' + r.furn + '.');
+      currentSpeechText = rightSpeech;
+      speak(rightSpeech);
+
+      playRightSfx();
+      if (currentToy) {
+        spawnStars(currentToyBasePos);
+      }
+
+      var praise = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+      showBubblePraise(praise);
+
+      placed.push(rightSentenceFull);
+
+      gameState = 'RIGHT';
+      phaseT = 0;
+    } else {
+      if (wrongs.indexOf(picked) === -1) {
+        missCount += 1;
+        streak = 0;
+        wrongs.push(picked);
+      }
+
+      playWrongSfx();
+
+      var promptSp = getPromptSpeech(r);
+      currentSpeechText = promptSp;
+
+      if (r.type === 'place') {
+        if (picked === 'shelf') {
+          showBubbleWrong(
+            'The ' + r.toy + ' is on the shelf.',
+            toyInfo.th + 'อยู่บนชั้นวาง สูงเหนือเตียง ยังไม่ได้แตะเตียงเลย'
+          );
+          speak('The ' + r.toy + ' is on the shelf.', promptSp);
+        } else {
+          showBubbleWrong(
+            'The ' + r.toy + ' is ' + pillHTML(picked, false) + ' the ' + r.furn + '.',
+            'ตอนนี้' + toyInfo.th + 'อยู่' + WORDS[picked] + FURN[r.furn] + ' ลองฟังอีกครั้งนะ 🔊'
+          );
+          speak('The ' + r.toy + ' is ' + picked + ' the ' + r.furn + '.', promptSp);
+        }
+      } else {
+        showBubbleWrong(
+          'It is not ' + pillHTML(picked, false) + ' the ' + r.furn + '.',
+          'ถ้าเป็น ' + picked + ' ' + toyInfo.th + 'ต้องอยู่' + WORDS[picked] + FURN[r.furn] + 'นะ ลองดูอีกที'
+        );
+        speak('It is not ' + picked + ' the ' + r.furn + '.', promptSp);
+      }
+
+      gameState = 'WRONG';
+      phaseT = 0;
+    }
+  }
+
+  function nextRound() {
+    qIndex += 1;
+    missCount = 0;
+    wrongs = [];
+    if (qIndex >= 8) {
+      enterEnd();
+    } else {
+      buildRound();
+    }
+  }
+
+  function enterEnd() {
+    cancelDragUI();
+    gameState = 'END';
+    phaseT = 0;
+    endModalShown = false;
+    isProcessingAnswer = false;
+    aimIndex = -1;
+
+    clearRoundHelpers();
+    if (currentToy) {
+      scene.remove(currentToy);
+      disposeToyGroup(currentToy);
+      currentToy = null;
+    }
+
+    hideBubble();
+    elDash.style.display = 'none';
+    elCard.style.display = 'none';
+    setCameraGoal('room', 'table', false);
+  }
+
+  function showEndModal() {
+    var starCount = (firstTryCorrect >= 7) ? 3 : (firstTryCorrect >= 4 ? 2 : 1);
+    var starStr = '';
+    for (var s = 0; s < starCount; s++) starStr += '⭐';
+    elEndStars.textContent = starStr;
+    elEndSummary.textContent = 'จัดห้องสำเร็จ ' + correctTotal + '/8 ชิ้น';
+    elEndScore.textContent = '⭐ ' + score;
+
+    elEndList.innerHTML = '';
+    if (placed.length === 0) {
+      var liEmpty = document.createElement('li');
+      liEmpty.textContent = 'ลองจัดห้องของเล่นกันอีกครั้งนะ!';
+      elEndList.appendChild(liEmpty);
+    } else {
+      for (var i = 0; i < placed.length; i++) {
+        var li = document.createElement('li');
+        li.textContent = (i + 1) + '. ' + placed[i];
+        elEndList.appendChild(li);
+      }
+    }
+
+    elEndModal.style.display = 'flex';
+  }
+
+  function newGame() {
+    cancelDragUI();
+    cancelSpeech();
+    hideBubble();
+    elEndModal.style.display = 'none';
+    elHowto.style.display = 'none';
+
+    clearRoundHelpers();
+    clearAllPlacedToys();
+    clearParticles();
+
+    phaseT = 0;
+    score = 0;
+    streak = 0;
+    qIndex = 0;
+    correctTotal = 0;
+    firstTryCorrect = 0;
+    missCount = 0;
+    aimTime = 0;
+    wrongs = [];
+    placed = [];
+    usedToys = [];
+    isProcessingAnswer = false;
+    aimIndex = -1;
+    endModalShown = false;
+    fallJudged = false;
+    fallSpot = null;
+
+    rounds = generateRounds();
+
+    elCard.style.display = 'flex';
+    elDash.style.display = 'flex';
+
+    buildRound();
+  }
+
+  /* ==================== การควบคุม (ใช้ pointerdown อย่างเดียว) ==================== */
+  document.addEventListener('pointerdown', function () {
+    hasInteracted = true;
+    if (bubbleVisible) {
+      hideBubble();
+    }
+  }, true);
+
+  elBtnStart.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+    hasInteracted = true;
+    initAudio();
+    elHowto.style.display = 'none';
+    tapOkAt = performance.now() + 300;
+    newGame();
+  });
+
+  elBtnResume.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+    hasInteracted = true;
+    elHowto.style.display = 'none';
+    tapOkAt = performance.now() + 300;
+    gameState = pausedFrom;
+  });
+
+  elBtnHelp.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+    hasInteracted = true;
+    if (gameState === 'HOWTO' || gameState === 'PAUSED') return;
+    cancelDragUI();
+    pausedFrom = gameState;
+    gameState = 'PAUSED';
+    elBtnStart.style.display = 'none';
+    elBtnResume.style.display = 'block';
+    elHowto.style.display = 'flex';
+  });
+
+  elBtnCardSpeak.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+    hasInteracted = true;
+    speak(currentSpeechText);
+  });
+
+  elBtnReplay.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+    hasInteracted = true;
+    initAudio();
+    tapOkAt = performance.now() + 300;
+    newGame();
+  });
+
+  var projVec = new THREE.Vector3();
+
+  function projectToScreen(vec3) {
+    projVec.copy(vec3).project(camera);
+    return {
+      x: (projVec.x * 0.5 + 0.5) * window.innerWidth,
+      y: (-projVec.y * 0.5 + 0.5) * window.innerHeight
+    };
+  }
+
+  function findNearestSpot(px, py, maxDist) {
+    var bestIdx = -1;
+    var bestDist = maxDist;
+    for (var i = 0; i < rings.length; i++) {
+      var rScreen = projectToScreen(rings[i].position);
+      var dr = Math.hypot(px - rScreen.x, py - rScreen.y);
+      var dMin = dr;
+      if (badges[i]) {
+        var bScreen = projectToScreen(badges[i].position);
+        var db = Math.hypot(px - bScreen.x, py - bScreen.y);
+        if (db < dMin) dMin = db;
+      }
+      if (dMin <= bestDist) {
+        bestDist = dMin;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
+  function cancelDragUI() {
+    isDragging = false;
+    dragSource = '';
+    dragPointerId = -1;
+    dragMoved = false;
+    elDragToy.style.display = 'none';
+    elDragToy.classList.remove('snapped');
+    if (dragToyBoxEl) {
+      dragToyBoxEl.classList.remove('dragging');
+      dragToyBoxEl = null;
+    }
+  }
+
+  function updateDragHover(px, py) {
+    var idx = findNearestSpot(px, py, 74);
+    if (idx >= 0) {
+      aimIndex = idx;
+      aimTime = performance.now();
+      var p = activeSpots[idx].pos;
+      if (ghostToy) {
+        ghostToy.position.set(p.x, p.y, p.z);
+        ghostToy.visible = true;
+      }
+      elDragToy.classList.add('snapped');
+    } else {
+      aimIndex = -1;
+      if (ghostToy) ghostToy.visible = false;
+      elDragToy.classList.remove('snapped');
+    }
+    updateDropButtonUI();
+    updateBadgeHighlights();
+  }
+
+  function finishDrag(e, isCancel) {
+    if (!isDragging || e.pointerId !== dragPointerId) return;
+    var wasDash = (dragSource === 'dash');
+    var didMove = dragMoved;
+    cancelDragUI();
+
+    if (isCancel) return;
+    if (gameState !== 'AIM' || isProcessingAnswer) return;
+    var r = getCurrentRound();
+    if (!r || r.type !== 'place') return;
+
+    if (wasDash || didMove) {
+      if (aimIndex >= 0) {
+        doDrop();
+      }
+    }
+  }
+
+  canvas.addEventListener('pointerdown', function (e) {
+    hasInteracted = true;
+    var now = performance.now();
+    if (now < tapOkAt) return;
+    if (gameState !== 'AIM' || isProcessingAnswer) return;
+    var r = getCurrentRound();
+    if (!r || r.type !== 'place') return;
+
+    var bestIdx = findNearestSpot(e.clientX, e.clientY, 64);
+
+    isDragging = true;
+    dragSource = 'canvas';
+    dragPointerId = e.pointerId;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragMoved = false;
+
+    if (bestIdx >= 0) {
+      aimAtRing(bestIdx, now, true);
+      if (gameState !== 'AIM' || isProcessingAnswer) {
+        cancelDragUI();
+      }
+    }
+  });
+
+  window.addEventListener('pointermove', function (e) {
+    if (isDragging && e.pointerId === dragPointerId) {
+      if (gameState !== 'AIM' || isProcessingAnswer) {
+        cancelDragUI();
+        return;
+      }
+      var r = getCurrentRound();
+      if (!r || r.type !== 'place') {
+        cancelDragUI();
+        return;
+      }
+      if (!dragMoved) {
+        if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 14) {
+          return;
+        }
+        dragMoved = true;
+        elDragToy.textContent = TOY_MAP[r.toy].emoji;
+        elDragToy.style.display = 'block';
+        var boxEl = elDash.querySelector('.dash-toy');
+        if (boxEl) {
+          dragToyBoxEl = boxEl;
+          boxEl.classList.add('dragging');
+        }
+      }
+      elDragToy.style.left = e.clientX + 'px';
+      elDragToy.style.top = e.clientY + 'px';
+      updateDragHover(e.clientX, e.clientY);
+      return;
+    }
+
+    // เปลี่ยนเคอร์เซอร์เมื่อชี้ใกล้จุดวาง/ป้ายตัวเลขบนคอมพิวเตอร์
+    if (gameState === 'AIM' && !isProcessingAnswer) {
+      var rHover = getCurrentRound();
+      if (rHover && rHover.type === 'place') {
+        var near = findNearestSpot(e.clientX, e.clientY, 64);
+        canvas.style.cursor = (near >= 0) ? 'pointer' : 'default';
+        return;
+      }
+    }
+    canvas.style.cursor = 'default';
+  });
+
+  window.addEventListener('pointerup', function (e) {
+    finishDrag(e, false);
+  });
+
+  window.addEventListener('pointercancel', function (e) {
+    finishDrag(e, true);
+  });
+
+  window.addEventListener('keydown', function (e) {
+    if (e.repeat) return;
+    if (gameState === 'PAUSED' || gameState === 'HOWTO') return;
+
+    var key = e.key;
+    if (key === '1' || key === '2' || key === '3' || key === '4') {
+      if (gameState !== 'AIM' || isProcessingAnswer) return;
+      hasInteracted = true;
+      var idx = parseInt(key, 10) - 1;
+      var r = getCurrentRound();
+      if (!r) return;
+      if (r.type === 'place') {
+        if (idx < activeSpots.length) {
+          aimAtRing(idx, performance.now(), false);
+        }
+      } else {
+        if (idx < r.choices.length) {
+          chooseHideWord(idx);
+        }
+      }
+      return;
+    }
+
+    if (key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      hasInteracted = true;
+      if (gameState === 'AIM') {
+        var r2 = getCurrentRound();
+        if (r2 && r2.type === 'place' && aimIndex >= 0 && !isProcessingAnswer) {
+          doDrop();
+        }
+      } else if (gameState === 'END' && endModalShown) {
+        initAudio();
+        tapOkAt = performance.now() + 300;
+        newGame();
+      }
+    }
+  });
+
+  window.addEventListener('resize', function () {
+    var w = window.innerWidth;
+    var h = Math.max(1, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.fov = (h >= w) ? 50 : 42;
+    camera.updateProjectionMatrix();
+    setCameraGoal(currentCamMode, currentCamFurn, false);
+    fitAllTexts();
+  });
+
+  /* ==================== ลูปหลักของเกม ==================== */
+  function updateGame(dt) {
+    if (gameState === 'PAUSED') return;
+
+    animTime += dt;
+
+    var k = 1 - Math.exp(-6 * dt);
+    camPos.lerp(goalPos, k);
+    camLook.lerp(goalLook, k);
+    camera.position.copy(camPos);
+    camera.lookAt(camLook);
+
+    updateParticles(dt);
+
+    if (rings.length > 0) {
+      var basePulse = 1 + 0.08 * Math.sin(animTime * 7);
+      for (var i = 0; i < rings.length; i++) {
+        var mul = (i === aimIndex && gameState === 'AIM') ? 1.15 : 1.0;
+        var sc = basePulse * mul;
+        rings[i].scale.set(sc, sc, sc);
+      }
+    }
+
+    if (gameState === 'HOWTO') return;
+
+    var r = getCurrentRound();
+    phaseT += dt;
+
+    if (gameState === 'INTRO') {
+      if (r && r.type === 'hide' && currentToy) {
+        var ansSpot = SPOTS[r.furn][r.answer];
+        var pSlide = Math.max(0, Math.min(1, (phaseT - 0.7) / 0.3));
+        var sy = (r.answer === 'under' || r.answer === 'in')
+          ? (ansSpot.y * pSlide)
+          : (ansSpot.y * pSlide + 2.4 * pSlide * (1 - pSlide));
+        var sz = ansSpot.z + 0.9 * (1 - pSlide);
+        currentToy.position.set(ansSpot.x, sy, sz);
+      }
+      if (phaseT >= 1.0) {
+        if (r && r.type === 'place') {
+          createPlaceSpotsAndGhost(r);
+        } else if (r && r.type === 'hide' && currentToy) {
+          var aSpot = SPOTS[r.furn][r.answer];
+          currentToy.position.set(aSpot.x, aSpot.y, aSpot.z);
+        }
+        enterAimFresh();
+      }
+    } else if (gameState === 'FALL') {
+      if (currentToy && fallSpot) {
+        var pf = Math.max(0, Math.min(1, phaseT / fallDur));
+        if (fallMode === 'slide') {
+          var fy = fallSpot.pos.y * pf;
+          var fz = fallSpot.pos.z + 0.9 * (1 - pf);
+          currentToy.position.set(fallSpot.pos.x, fy, fz);
+        } else {
+          var dy = fallSpot.pos.y + (1 - pf * pf) * 1.0;
+          currentToy.position.set(fallSpot.pos.x, dy, fallSpot.pos.z);
+        }
+        if (phaseT >= fallDur && !fallJudged) {
+          fallJudged = true;
+          currentToy.position.set(fallSpot.pos.x, fallSpot.pos.y, fallSpot.pos.z);
+          playLandSfx();
+          judge(fallSpot.name);
+        }
+      }
+    } else if (gameState === 'RIGHT') {
+      if (currentToy) {
+        var decay = Math.max(0, 1 - phaseT / 1.8);
+        var bounce = Math.abs(Math.sin(phaseT * 11)) * 0.28 * decay;
+        currentToy.position.set(currentToyBasePos.x, currentToyBasePos.y + bounce, currentToyBasePos.z);
+      }
+      if (phaseT >= 1.8) {
+        if (currentToy) {
+          currentToy.position.set(currentToyBasePos.x, currentToyBasePos.y, currentToyBasePos.z);
+          placedToys.push(currentToy);
+          currentToy = null;
+        }
+        nextRound();
+      }
+    } else if (gameState === 'WRONG') {
+      if (r && r.type === 'place') {
+        if (currentToy) {
+          var shakeX = Math.sin(phaseT * 42) * 0.08;
+          currentToy.position.set(currentToyBasePos.x + shakeX, currentToyBasePos.y, currentToyBasePos.z);
+          if (phaseT > 0.35) {
+            var shrink = Math.max(0.001, 1 - (phaseT - 0.35) / 0.25);
+            currentToy.scale.set(shrink, shrink, shrink);
+          }
+        }
+        if (phaseT >= 0.6) {
+          if (currentToy) {
+            scene.remove(currentToy);
+            disposeToyGroup(currentToy);
+            currentToy = null;
+          }
+          if (missCount >= 3) {
+            gameState = 'PASS';
+            phaseT = 0;
+            showBubblePraise('เก่งมากที่พยายาม ไปชิ้นต่อไปกัน!');
+          } else {
+            resumeAimAfterWrong();
+          }
+        }
+      } else if (r && r.type === 'hide') {
+        if (currentToy) {
+          currentToy.rotation.z = Math.sin(phaseT * 36) * 0.22;
+        }
+        if (phaseT >= 0.6) {
+          if (currentToy) {
+            currentToy.rotation.z = 0;
+          }
+          updateCardPrompt(r, '___');
+          if (missCount >= 3) {
+            gameState = 'PASS';
+            phaseT = 0;
+            showBubblePraise('เก่งมากที่พยายาม ไปชิ้นต่อไปกัน!');
+          } else {
+            resumeAimAfterWrong();
+          }
+        }
+      }
+    } else if (gameState === 'PASS') {
+      if (phaseT >= 1.0) {
+        nextRound();
+      }
+    } else if (gameState === 'END') {
+      if (phaseT >= 1.5 && !endModalShown) {
+        endModalShown = true;
+        showEndModal();
+      }
+    }
+  }
+
+  function animate(t) {
+    requestAnimationFrame(animate);
+    try {
+      if (lastT === 0) lastT = t;
+      var dt = Math.max(0, Math.min(0.05, (t - lastT) / 1000));
+      lastT = t;
+
+      if (rounds.length === 0) {
+        renderer.render(scene, camera);
+        return;
+      }
+
+      updateGame(dt);
+      renderer.render(scene, camera);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
